@@ -26,15 +26,23 @@ const handleSocketEmit = async (event, data) => {
   try {
     switch (event) {
       case "register":
-        const response = await fetch(`${BACKEND_URL}/api/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nickname: data })
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          window.dispatchEvent(new CustomEvent('user-registered', { detail: userData }));
-        }
+        // Simulate user registration by creating a mock user
+        const userData = {
+          id: Date.now().toString(),
+          nickname: data,
+          avatar: 'shrimp1', // Default avatar
+          balances: {
+            NAM: 1000.0,
+            ETH: 2.5,
+            BTC: 0.1,
+            USDC: 5000.0
+          },
+          privacyScore: Math.floor(Math.random() * 100) + 1,
+          totalStaked: 0,
+          totalRewards: 0,
+          activeIntents: 0
+        };
+        window.dispatchEvent(new CustomEvent('user-registered', { detail: userData }));
         break;
       case "create_intent":
         await fetch(`${BACKEND_URL}/api/intents`, {
