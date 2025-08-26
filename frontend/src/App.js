@@ -10,7 +10,16 @@ import Leaderboard from "./components/Leaderboard";
 import Profile from "./components/Profile";
 import "./styles/theme.css";
 
-const socket = io("http://localhost:3000");
+// Dynamic backend URL - use environment variable or fallback to production URL
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://anoma-intent-simulation-g3jj.vercel.app";
+
+const socket = io(BACKEND_URL, {
+  transports: ['websocket', 'polling'], // Add polling as fallback for Vercel
+  timeout: 20000,
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionAttempts: 5
+});
 
 function App() {
   const [page, setPage] = useState("login");
@@ -24,6 +33,7 @@ function App() {
   const [action, setAction] = useState("swap");
   const [nickname, setNickname] = useState("");
   const [savedNickname, setSavedNickname] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState("connecting");
 
   // Persistent username from localStorage
   useEffect(() => {
@@ -35,6 +45,23 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Socket connection status
+    socket.on("connect", () => {
+      console.log("Connected to server");
+      setConnectionStatus("connected");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Disconnected from server");
+      setConnectionStatus("disconnected");
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+      setConnectionStatus("error");
+      setStatus("❌ Connection error. Please check your internet connection.");
+    });
+
     socket.on("registered", (userData) => {
       setUser(userData);
       setPage("choice");
@@ -80,22 +107,64 @@ function App() {
       setTimeout(() => setStatus(""), 8000);
     });
 
-    fetch("http://localhost:3000/api/intents").then((r) => r.json()).then(setIntents);
-    fetch("http://localhost:3000/api/staking-intents").then((r) => r.json()).then(setStakingIntents);
-    fetch("http://localhost:3000/api/staking-pools").then((r) => r.json()).then(setStakingPools);
-    fetch("http://localhost:3000/api/leaderboard").then((r) => r.json()).then(setLeaderboard);
+    // Fetch initial data
+    const fetchData = async () => {
+      try {
+        const [intentsRes, stakingIntentsRes, stakingPoolsRes, leaderboardRes] = await Promise.all([
+          fetch(`${BACKEND_URL}/api/intents`),
+          fetch(`${BACKEND_URL}/api/staking-intents`),
+          fetch(`${BACKEND_URL}/api/staking-pools`),
+          fetch(`${BACKEND_URL}/api/leaderboard`)
+        ]);
+
+        if (intentsRes.ok) {
+          const intentsData = await intentsRes.json();
+          setIntents(intentsData);
+        }
+        
+        if (stakingIntentsRes.ok) {
+          const stakingIntentsData = await stakingIntentsRes.json();
+          setStakingIntents(stakingIntentsData);
+        }
+        
+        if (stakingPoolsRes.ok) {
+          const stakingPoolsData = await stakingPoolsRes.json();
+          setStakingPools(stakingPoolsData);
+        }
+        
+        if (leaderboardRes.ok) {
+          const leaderboardData = await leaderboardRes.json();
+          setLeaderboard(leaderboardData);
+        }
+      } catch (error) {
+        console.error("Failed to fetch initial data:", error);
+        setStatus("❌ Failed to load initial data");
+      }
+    };
+
+    fetchData();
 
     return () => {
-      socket.disconnect();
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.off("registered");
+      socket.off("intents_update");
+      socket.off("leaderboard_update");
+      socket.off("intent_matched");
+      socket.off("staking_matched");
+      socket.off("auto_swap_stake_completed");
+      socket.off("user_updated");
+      socket.off("error");
     };
   }, []);
 
   // Auto-login with saved nickname
   useEffect(() => {
-    if (savedNickname && !user) {
+    if (savedNickname && !user && connectionStatus === "connected") {
       socket.emit("register", savedNickname);
     }
-  }, [savedNickname, user]);
+  }, [savedNickname, user, connectionStatus]);
 
   // Register handler with persistent nickname
   const handleRegister = (e) => {
@@ -105,6 +174,13 @@ function App() {
       setTimeout(() => setStatus(""), 3000);
       return;
     }
+    
+    if (connectionStatus !== "connected") {
+      setStatus("❌ Not connected to server. Please wait...");
+      setTimeout(() => setStatus(""), 3000);
+      return;
+    }
+    
     socket.emit("register", nickname);
   };
 
@@ -117,6 +193,22 @@ function App() {
     setPage("login");
   };
 
+  // Show connection status
+  const getConnectionStatusDisplay = () => {
+    switch (connectionStatus) {
+      case "connecting":
+        return "🔄 Connecting...";
+      case "connected":
+        return "✅ Connected";
+      case "disconnected":
+        return "⚠️ Disconnected";
+      case "error":
+        return "❌ Connection Error";
+      default:
+        return "🔄 Connecting...";
+    }
+  };
+
   // LOGIN PAGE
   if (!user) {
     return (
@@ -124,6 +216,9 @@ function App() {
         <header>
           <h1> Anoma Intent Simulator</h1>
           <p className="subtitle">Intent-centric | Anoma</p>
+          <div style={{ fontSize: '12px', color: connectionStatus === 'connected' ? '#4CAF50' : '#f44336', marginTop: '10px' }}>
+            {getConnectionStatusDisplay()}
+          </div>
         </header>
         <div className="register-card">
           <h2>enter the chain</h2>
@@ -137,8 +232,13 @@ function App() {
               required
               value={nickname}
               onChange={e => setNickname(e.target.value)}
+              disabled={connectionStatus !== "connected"}
             />
-            <button type="submit" className="magic-btn">
+            <button 
+              type="submit" 
+              className="magic-btn"
+              disabled={connectionStatus !== "connected"}
+            >
               {savedNickname ? "Login with new nickname" : "login"} ✨
             </button>
           </form>
@@ -167,6 +267,9 @@ function App() {
             <img src={`/${user.avatar}.jpg`} alt="NFT Shrimp" className="shrimp-avatar-small" />
             <span>Welcome back again, <strong>{user.nickname}</strong>!</span>
             <button className="logout-btn" onClick={handleClearData}>Logout</button>
+          </div>
+          <div style={{ fontSize: '12px', color: connectionStatus === 'connected' ? '#4CAF50' : '#f44336', marginTop: '10px' }}>
+            {getConnectionStatusDisplay()}
           </div>
         </header>
         <div className="landing-choice">
@@ -204,6 +307,9 @@ function App() {
       <div className="container">
         <header>
           <h1> Anoma Intent Simulator</h1>
+          <div style={{ fontSize: '12px', color: connectionStatus === 'connected' ? '#4CAF50' : '#f44336', marginBottom: '10px' }}>
+            {getConnectionStatusDisplay()}
+          </div>
         </header>
         <div className="dashboard">
           <div className="node-card">
@@ -262,6 +368,9 @@ function App() {
       <div className="container">
         <header>
           <h1> Anoma Intent Simulator</h1>
+          <div style={{ fontSize: '12px', color: connectionStatus === 'connected' ? '#4CAF50' : '#f44336', marginBottom: '10px' }}>
+            {getConnectionStatusDisplay()}
+          </div>
         </header>
         <button className="magic-btn" onClick={() => setPage("intent")}>Enter Intent Form</button>
         <button className="magic-btn" onClick={() => setPage("profile")}>Profile & Portfolio 💰</button>
