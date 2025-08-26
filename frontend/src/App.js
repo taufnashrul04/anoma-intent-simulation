@@ -14,11 +14,12 @@ import "./styles/theme.css";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "https://anoma-intent-simulation-g3jj.vercel.app";
 
 const socket = io(BACKEND_URL, {
-  transports: ['websocket', 'polling'], // Add polling as fallback for Vercel
+  transports: ['polling'], // Only use polling for Vercel compatibility
   timeout: 20000,
   reconnection: true,
-  reconnectionDelay: 1000,
-  reconnectionAttempts: 5
+  reconnectionDelay: 2000,
+  reconnectionAttempts: 5,
+  forceNew: true
 });
 
 function App() {
