@@ -1,4 +1,4 @@
-// --- FRONTEND App.js PATCHED: persistent username, auto-login, logout, and decimal input support ---
+// --- FRONTEND App.js UPDATED FOR PRODUCTION DEPLOYMENT ---
 import React, { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import IntentForm from "./components/IntentForm";
@@ -10,7 +10,9 @@ import Leaderboard from "./components/Leaderboard";
 import Profile from "./components/Profile";
 import "./styles/theme.css";
 
-const socket = io("http://localhost:3000");
+// Production backend URL - will use environment variable in production
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:3000";
+const socket = io(BACKEND_URL);
 
 function App() {
   const [page, setPage] = useState("login");
@@ -80,10 +82,11 @@ function App() {
       setTimeout(() => setStatus(""), 8000);
     });
 
-    fetch("http://localhost:3000/api/intents").then((r) => r.json()).then(setIntents);
-    fetch("http://localhost:3000/api/staking-intents").then((r) => r.json()).then(setStakingIntents);
-    fetch("http://localhost:3000/api/staking-pools").then((r) => r.json()).then(setStakingPools);
-    fetch("http://localhost:3000/api/leaderboard").then((r) => r.json()).then(setLeaderboard);
+    // Updated API calls to use production backend URL
+    fetch(`${BACKEND_URL}/api/intents`).then((r) => r.json()).then(setIntents);
+    fetch(`${BACKEND_URL}/api/staking-intents`).then((r) => r.json()).then(setStakingIntents);
+    fetch(`${BACKEND_URL}/api/staking-pools`).then((r) => r.json()).then(setStakingPools);
+    fetch(`${BACKEND_URL}/api/leaderboard`).then((r) => r.json()).then(setLeaderboard);
 
     return () => {
       socket.disconnect();
