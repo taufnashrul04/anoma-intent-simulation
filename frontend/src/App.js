@@ -275,7 +275,7 @@ function App() {
         <button className="link-btn" onClick={() => setPage("choice")}>⬅ Back to Menu</button>
         <footer>
           <p>
-            By Skypots  | ✨ Anoma Community Indonesia
+            By Skypots  | Githyanki mage
           </p>
         </footer>
       </div>
