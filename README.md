@@ -20,5 +20,8 @@ The backend folder includes:
     Business Logic that controls userbot for staking, swap, and leaderboard.
 
 The frontend folder includes the website interface with the following features:
+<img width="1910" height="834" alt="image" src="https://github.com/user-attachments/assets/374de885-f2f1-49b0-beb9-aa932ee8555d" />
+above is landing page of anoma intent simulator, you can login with your username your data will be save at our backend
+
 
 
