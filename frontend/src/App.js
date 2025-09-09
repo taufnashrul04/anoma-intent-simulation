@@ -153,7 +153,7 @@ function App() {
         </div>
         <footer>
           <p>
-            By Skypots  | ✨ Anoma Community Indonesia
+            By Skypots  | Githyanki mage
           </p>
         </footer>
       </div>
@@ -179,7 +179,7 @@ function App() {
         </div>
         <footer>
           <p>
-            By Skypots  | ✨ Anoma Community Indonesia
+            By Skypots  | Githyanki mage
           </p>
         </footer>
       </div>
@@ -194,7 +194,7 @@ function App() {
           <button className="link-btn" onClick={() => setPage("choice")}>⬅ back to Menu</button>
           <footer>
             <p>
-              By Skypots  | ✨ Anoma Community Indonesia
+              By Skypots  | Githyanki mage
             </p>
           </footer>
         </div>
@@ -253,7 +253,7 @@ function App() {
         <button className="link-btn" onClick={() => setPage("choice")}>⬅ back to Menu</button>
         <footer>
           <p>
-            By Skypots  | ✨ Anoma Community Indonesia
+            By Skypots  | Githyanki mage
           </p>
         </footer>
       </div>
